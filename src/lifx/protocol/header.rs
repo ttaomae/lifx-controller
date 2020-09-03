@@ -15,11 +15,10 @@ impl Frame {
     pub(crate) fn as_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
         bytes.extend(self.size.to_le_bytes().iter());
-        bytes.extend(
-            (1024u16 | (self.addressable as u16) << 12 | (self.tagged as u16) << 13)
-                .to_le_bytes()
-                .iter(),
-        );
+        let mut protocol = 1024u16;
+        protocol |= (self.addressable as u16) << 12;
+        protocol |= (self.tagged as u16) << 13;
+        bytes.extend(protocol.to_le_bytes().iter());
         bytes.extend(self.source.to_le_bytes().iter());
         bytes
     }
@@ -69,7 +68,7 @@ impl FrameAddress {
         let mut bytes: Vec<u8> = self.target.as_bytes();
         // Combine two 0 bytes from `target` with following reserved 48 bits (6 bytes).
         bytes.extend([0u8; 8].iter());
-        bytes.push(0x00 | ((self.res_required as u8) << 7) | ((self.ack_required as u8) << 6));
+        bytes.push(0x00 | ((self.res_required as u8)) | ((self.ack_required as u8) << 1));
         bytes.push(self.sequence);
         bytes
     }
@@ -85,8 +84,8 @@ impl From<&[u8]> for FrameAddress {
         // Bytes 6-7 are last two bytes of target; should be zero.
         // Bytes 8-13 are reserved; must all be zero.
         let res_ack = bytes[14];
-        let res_required = (res_ack & 0b1000_0000) != 0;
-        let ack_required = (res_ack & 0b0100_0000) != 0;
+        let res_required = (res_ack & 0b0000_0001) != 0;
+        let ack_required = (res_ack & 0b0000_0010) != 0;
         let sequence = bytes[15];
 
         FrameAddress {
