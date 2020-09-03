@@ -75,6 +75,7 @@ impl PacketBuilder {
         Self::new(Message::Empty(MessageType::Light(message_type)))
     }
 
+    /// A source identifier to uniquely identify a client.
     pub(crate) fn source(mut self, source: u32) -> Self {
         self.source = source;
         self

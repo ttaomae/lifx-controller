@@ -1,4 +1,4 @@
-use super::header::{DeviceMessageType, MessageType};
+use super::header::{DeviceMessageType, LightMessageType, MessageType};
 use std::convert::TryInto;
 
 /// A LIFX packet message.
@@ -10,6 +10,9 @@ pub(crate) enum Message {
     StateLabel(StateLabelPayload),
     StateGroup(StateGroupPayload),
     StateLocation(StateLocationPayload),
+    State(StatePayload),
+    SetColor(SetColorPayload),
+    SetPower(SetPowerPayload),
 }
 
 impl Message {
@@ -19,7 +22,9 @@ impl Message {
         }
 
         use DeviceMessageType::*;
+        use LightMessageType::*;
         use MessageType::Device;
+        use MessageType::Light;
         match message_type {
             Device(StateService) => Message::StateService(StateServicePayload::from_bytes(bytes)),
             Device(StateLabel) => Message::StateLabel(StateLabelPayload::from_bytes(bytes)),
@@ -27,8 +32,8 @@ impl Message {
                 Message::StateLocation(StateLocationPayload::from_bytes(bytes))
             }
             Device(StateGroup) => Message::StateGroup(StateGroupPayload::from_bytes(bytes)),
+            Light(State) => Message::State(StatePayload::from_bytes(bytes)),
             _ => Message::Bytes(message_type, bytes.to_vec()),
-            // _ => panic!("Unsupported: {:?}", message_type),
         }
     }
 
@@ -40,18 +45,29 @@ impl Message {
             Message::StateLabel(_) => MessageType::Device(DeviceMessageType::StateLabel),
             Message::StateLocation(_) => MessageType::Device(DeviceMessageType::StateLocation),
             Message::StateGroup(_) => MessageType::Device(DeviceMessageType::StateGroup),
+            Message::State(_) => MessageType::Light(LightMessageType::State),
+            Message::SetColor(_) => MessageType::Light(LightMessageType::SetColor),
+            Message::SetPower(_) => MessageType::Light(LightMessageType::SetPower),
         }
     }
 
     pub(crate) fn as_bytes(&self) -> Vec<u8> {
-        Vec::new()
+        match self {
+            Message::Empty(_) => Vec::new(),
+            Message::Bytes(_, bytes) => bytes.clone(),
+            Message::SetPower(set_power_payload) => set_power_payload.as_bytes(),
+            Message::SetColor(set_color_payload) => set_color_payload.as_bytes(),
+            _ => panic!("Unrecognized message"),
+        }
     }
 }
 
+/// A payload sent by a client. Can be converted to bytes.
 trait ClientPayload {
-    fn as_bytes(&self) -> &[u8];
+    fn as_bytes(&self) -> Vec<u8>;
 }
 
+/// A payload sent by a device. Can be created from bytes.
 trait DevicePayload {
     fn from_bytes(bytes: &[u8]) -> Self;
 }
@@ -143,5 +159,138 @@ impl DevicePayload for StateGroupPayload {
             label,
             updated_at,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct Hsbk {
+    hue: u16,
+    saturation: u16,
+    brightness: u16,
+    kelvin: u16,
+}
+
+impl Hsbk {
+    pub(crate) fn new(hue: u16, saturation: u16, brightness: u16, kelvin: u16) -> Hsbk {
+        Hsbk {
+            hue,
+            saturation,
+            brightness,
+            kelvin,
+        }
+    }
+}
+
+impl ClientPayload for Hsbk {
+    fn as_bytes(&self) -> Vec<u8> {
+        let mut result = Vec::new();
+        result.extend(self.hue.to_le_bytes().iter());
+        result.extend(self.saturation.to_le_bytes().iter());
+        result.extend(self.brightness.to_le_bytes().iter());
+        result.extend(self.kelvin.to_le_bytes().iter());
+        result
+    }
+}
+
+impl DevicePayload for Hsbk {
+    fn from_bytes(bytes: &[u8]) -> Self {
+        if bytes.len() != 8 {
+            panic!();
+        }
+
+        Hsbk {
+            hue: u16::from_le_bytes(bytes[0..2].try_into().unwrap()),
+            saturation: u16::from_le_bytes(bytes[2..4].try_into().unwrap()),
+            brightness: u16::from_le_bytes(bytes[4..6].try_into().unwrap()),
+            kelvin: u16::from_le_bytes(bytes[6..8].try_into().unwrap()),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct StatePayload {
+    color: Hsbk,
+    // reserved - 16 bits
+    power: u16,
+    label: String, // 32 bytes
+    // reserved - 64 bits
+}
+
+impl StatePayload {
+    pub(crate) fn get_power(&self) -> Power {
+        match self.power {
+            0 => Power::Off,
+            0xffff => Power::On,
+            n => Power::Unknown(n),
+        }
+    }
+}
+
+impl DevicePayload for StatePayload {
+    fn from_bytes(bytes: &[u8]) -> Self {
+        if bytes.len() != 52 {
+            panic!();
+        }
+
+        StatePayload {
+            color: Hsbk::from_bytes(&bytes[0..8]),
+            power: u16::from_le_bytes(bytes[10..12].try_into().unwrap()),
+            label: String::from_utf8(bytes[12..44].to_vec()).unwrap(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct SetColorPayload {
+    // reserved - 8 bits
+    color: Hsbk,
+    duration: u32,
+}
+
+impl SetColorPayload {
+    pub(crate) fn new(color: Hsbk, duration: u32) -> SetColorPayload {
+        SetColorPayload { color, duration }
+    }
+}
+
+impl ClientPayload for SetColorPayload {
+    fn as_bytes(&self) -> Vec<u8> {
+        let mut result = Vec::new();
+        result.push(0); // reserved - 8 bits
+        result.extend(self.color.as_bytes());
+        result.extend(self.duration.to_le_bytes().iter());
+        result
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum Power {
+    Off,
+    On,
+    Unknown(u16),
+}
+#[derive(Debug, Clone)]
+pub(crate) struct SetPowerPayload {
+    power: Power,
+    duration: u32,
+}
+
+impl SetPowerPayload {
+    pub(crate) fn new(power: Power, duration: u32) -> SetPowerPayload {
+        SetPowerPayload { power, duration }
+    }
+}
+
+impl ClientPayload for SetPowerPayload {
+    fn as_bytes(&self) -> Vec<u8> {
+        let mut result = Vec::new();
+        let level = match self.power {
+            Power::Off => u16::MIN,
+            Power::On => u16::MAX,
+            Power::Unknown(n) => n,
+        };
+        result.extend(level.to_le_bytes().iter());
+        result.extend(self.duration.to_le_bytes().iter());
+        result
     }
 }
