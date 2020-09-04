@@ -4,6 +4,7 @@ use std::{
     net::{SocketAddr, UdpSocket},
 };
 
+pub(crate) mod client;
 pub(crate) mod device;
 pub(crate) mod light;
 pub(crate) mod protocol;

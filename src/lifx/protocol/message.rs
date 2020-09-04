@@ -217,7 +217,7 @@ pub(crate) struct StatePayload {
 }
 
 impl StatePayload {
-    pub(crate) fn get_power(&self) -> Power {
+    pub(crate) fn power(&self) -> Power {
         match self.power {
             0 => Power::Off,
             0xffff => Power::On,
