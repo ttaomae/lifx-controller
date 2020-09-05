@@ -5,6 +5,7 @@ use super::{
     protocol::message::{Power, StatePayload},
 };
 use std::{cell::Cell, collections::HashSet, io, net::UdpSocket, time::Duration};
+use device::DeviceAddress;
 
 const ZERO_DURATION: Duration = Duration::from_secs(0);
 const MAX_DURATION: Duration = Duration::from_millis(u32::MAX as u64);
@@ -32,23 +33,28 @@ impl Client {
             device::get_device_address(&self.socket, self.source, self.sequence())?;
 
         for address in device_addresses {
-            let mac_address = address.mac_address();
-            let socket_address = address.socket_address();
-
-            let label = device::get_label(&self.socket, &address, self.source, self.sequence())?;
-            let group = device::get_group(&self.socket, &address, self.source, self.sequence())?;
-            let location =
-                device::get_location(&self.socket, &address, self.source, self.sequence())?;
-            let device = Device::new(
-                mac_address,
-                socket_address,
-                trim_trailing_null(label.label),
-                trim_trailing_null(group.label),
-                trim_trailing_null(location.label),
-            );
+            let device = self.find_device(address)?;
             self.devices.insert(device);
         }
         Result::Ok(self.devices.clone())
+    }
+
+    pub(crate) fn find_device(&mut self, device_address: DeviceAddress) -> io::Result<Device> {
+        let mac_address = device_address.mac_address();
+        let socket_address = device_address.socket_address();
+
+        let label = device::get_label(&self.socket, &device_address, self.source, self.sequence())?;
+        let group = device::get_group(&self.socket, &device_address, self.source, self.sequence())?;
+        let location =
+            device::get_location(&self.socket, &device_address, self.source, self.sequence())?;
+        let device = Device::new(
+            mac_address,
+            socket_address,
+            trim_trailing_null(label.label),
+            trim_trailing_null(group.label),
+            trim_trailing_null(location.label),
+        );
+        Result::Ok(device)
     }
 
     pub(crate) fn get_state(&self, device: &Device) -> io::Result<StatePayload> {
