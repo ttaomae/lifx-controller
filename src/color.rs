@@ -1,14 +1,14 @@
 use super::protocol::message::Hsbk;
 
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct Color {
+pub struct Color {
     hue: u16,
     saturation: u16,
     brightness: u16,
 }
 
 impl Color {
-    pub(crate) fn rgb(r: u8, g: u8, b: u8) -> Color {
+    pub fn rgb(r: u8, g: u8, b: u8) -> Color {
         let r = normalize(r);
         let g = normalize(g);
         let b = normalize(b);
@@ -43,7 +43,7 @@ impl Color {
         }
     }
 
-    pub(crate) fn add_degrees(&self, degrees: f32) -> Color {
+    pub fn add_degrees(&self, degrees: f32) -> Color {
         let delta_hue = degrees_to_u16(degrees);
         Color {
             hue: self.hue.wrapping_add(delta_hue),

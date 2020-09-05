@@ -5,10 +5,9 @@ use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
 use super::protocol::header::*;
 use super::protocol::message::*;
 use super::protocol::packet::*;
-use crate::lifx;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct Device {
+pub struct Device {
     mac_address: MacAddress,
     socket_address: SocketAddr,
     label: String,
@@ -115,7 +114,7 @@ pub(crate) fn get_label(
         .target(device_address.mac_address())
         .build();
 
-    let message = lifx::send_packet(socket, device_address.socket_address(), packet)?;
+    let message = send_packet(socket, device_address.socket_address(), packet)?;
     if let Message::StateLabel(label_payload) = message {
         Result::Ok(label_payload)
     } else {
@@ -140,7 +139,7 @@ pub(crate) fn get_location(
         .target(device_address.mac_address())
         .build();
 
-    let message = lifx::send_packet(socket, device_address.socket_address(), packet)?;
+    let message = send_packet(socket, device_address.socket_address(), packet)?;
     if let Message::StateLocation(location_payload) = message {
         Result::Ok(location_payload)
     } else {
@@ -166,7 +165,7 @@ pub(crate) fn get_group(
         .target(device_address.mac_address())
         .build();
 
-    let message = lifx::send_packet(socket, device_address.socket_address(), packet)?;
+    let message = send_packet(socket, device_address.socket_address(), packet)?;
     if let Message::StateGroup(group_payload) = message {
         Result::Ok(group_payload)
     } else {

@@ -1,5 +1,3 @@
-mod lifx;
-
 use lifx::color::Color;
 use std::io;
 use std::{net::UdpSocket, time::Duration};

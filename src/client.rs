@@ -10,7 +10,7 @@ use device::DeviceAddress;
 const ZERO_DURATION: Duration = Duration::from_secs(0);
 const MAX_DURATION: Duration = Duration::from_millis(u32::MAX as u64);
 
-pub(crate) struct Client {
+pub struct Client {
     socket: UdpSocket,
     source: u32,
     sequence: Cell<u8>,
@@ -18,7 +18,7 @@ pub(crate) struct Client {
 }
 
 impl Client {
-    pub(crate) fn new(socket: UdpSocket) -> Client {
+    pub fn new(socket: UdpSocket) -> Client {
         Client {
             socket,
             source: rand::random::<u32>(),
@@ -28,7 +28,7 @@ impl Client {
     }
 
     /// Returns information about LIFX devices on the network.
-    pub(crate) fn discover(&mut self) -> Result<HashSet<Device>, io::Error> {
+    pub fn discover(&mut self) -> Result<HashSet<Device>, io::Error> {
         let device_addresses =
             device::get_device_address(&self.socket, self.source, self.sequence())?;
 
@@ -62,7 +62,7 @@ impl Client {
         Result::Ok(state)
     }
 
-    pub(crate) fn transition_on(&self, device: &Device, duration: Duration) -> io::Result<()> {
+    pub fn transition_on(&self, device: &Device, duration: Duration) -> io::Result<()> {
         light::set_power(
             &self.socket,
             device,
@@ -74,11 +74,11 @@ impl Client {
         Result::Ok(())
     }
 
-    pub(crate) fn turn_on(&self, device: &Device) -> io::Result<()> {
+    pub fn turn_on(&self, device: &Device) -> io::Result<()> {
         self.transition_on(device, ZERO_DURATION)
     }
 
-    pub(crate) fn transition_off(&self, device: &Device, duration: Duration) -> io::Result<()> {
+    pub fn transition_off(&self, device: &Device, duration: Duration) -> io::Result<()> {
         light::set_power(
             &self.socket,
             device,
@@ -90,11 +90,11 @@ impl Client {
         Result::Ok(())
     }
 
-    pub(crate) fn turn_off(&self, device: &Device) -> io::Result<()> {
+    pub fn turn_off(&self, device: &Device) -> io::Result<()> {
         self.transition_off(device, ZERO_DURATION)
     }
 
-    pub(crate) fn toggle_power(&self, device: &Device, duration: Duration) -> io::Result<()> {
+    pub fn toggle_power(&self, device: &Device, duration: Duration) -> io::Result<()> {
         match self.get_state(device)?.power() {
             Power::Off => self.transition_on(device, duration),
             Power::On => self.transition_off(device, duration),
@@ -105,7 +105,7 @@ impl Client {
         }
     }
 
-    pub(crate) fn transition_brightness(
+    pub fn transition_brightness(
         &self,
         device: &Device,
         brightness: f32,
@@ -136,11 +136,11 @@ impl Client {
         Result::Ok(())
     }
 
-    pub(crate) fn set_brightness(&self, device: &Device, brightness: f32) -> io::Result<()> {
+    pub fn set_brightness(&self, device: &Device, brightness: f32) -> io::Result<()> {
         self.transition_brightness(device, brightness, ZERO_DURATION)
     }
 
-    pub(crate) fn transition_color(
+    pub fn transition_color(
         &self,
         device: &Device,
         color: Color,
@@ -157,11 +157,11 @@ impl Client {
         Result::Ok(())
     }
 
-    pub(crate) fn set_color(&self, device: &Device, color: Color) -> io::Result<()> {
+    pub fn set_color(&self, device: &Device, color: Color) -> io::Result<()> {
         self.transition_color(device, color, ZERO_DURATION)
     }
 
-    pub(crate) fn transition_temperature(
+    pub fn transition_temperature(
         &self,
         device: &Device,
         temperature: u16,
@@ -180,7 +180,7 @@ impl Client {
         Result::Ok(())
     }
 
-    pub(crate) fn set_temperature(&self, device: &Device, temperature: u16) -> io::Result<()> {
+    pub fn set_temperature(&self, device: &Device, temperature: u16) -> io::Result<()> {
         self.transition_temperature(device, temperature, ZERO_DURATION)
     }
 

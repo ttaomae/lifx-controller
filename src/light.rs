@@ -1,10 +1,9 @@
-use crate::lifx;
-use lifx::{
+use super::{
     device::Device,
     protocol::{
         header::LightMessageType,
         message::{Hsbk, Message, Power, SetColorPayload, SetPowerPayload, StatePayload},
-        packet::PacketBuilder,
+        packet::{PacketBuilder,send_packet,send_packet_no_response},
     },
 };
 use std::{io, net::UdpSocket};
@@ -22,7 +21,7 @@ pub(crate) fn get_state(
         .res_required(true)
         .build();
 
-    let response = lifx::send_packet(socket, device.socket_address(), packet)?;
+    let response = send_packet(socket, device.socket_address(), packet)?;
 
     if let Message::State(state_payload) = response {
         Result::Ok(state_payload)
@@ -48,7 +47,7 @@ pub(crate) fn set_power(
         .sequence(sequence)
         .build();
 
-    lifx::send_packet_no_response(socket, device.socket_address(), packet)?;
+    send_packet_no_response(socket, device.socket_address(), packet)?;
     Result::Ok(())
 }
 
@@ -67,6 +66,6 @@ pub(crate) fn set_color(
         .res_required(true)
         .build();
 
-    lifx::send_packet(socket, device.socket_address(), packet)?;
+    send_packet(socket, device.socket_address(), packet)?;
     Result::Ok(())
 }
