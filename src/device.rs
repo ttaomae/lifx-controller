@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::io;
-use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
+use std::{fmt, net::{Ipv4Addr, SocketAddr, UdpSocket}, str::FromStr};
 
 use super::protocol::header::*;
 use super::protocol::message::*;
@@ -54,6 +54,39 @@ impl DeviceAddress {
 
     pub(crate) fn socket_address(&self) -> SocketAddr {
         self.socket_address
+    }
+}
+
+impl fmt::Display for DeviceAddress {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "{}#{}", self.mac_address, self.socket_address)
+    }
+}
+
+// Inverse of Display implementation.
+impl FromStr for DeviceAddress {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if !s.contains('#') {
+            return Result::Err(String::from("String must be in the format <mac_address>#<socket_address>."));
+        }
+        let mut parts = s.split('#');
+
+        // Since we already checked that the input contains a separator, `parts.next()` should return at least two elements, so it is safe to unwrap.
+        let mac_string = parts.next().unwrap();
+        let socket_string = parts.next().unwrap();
+
+        let mac_address: MacAddress = mac_string.parse().map_err(|_| format!("Could not parse MAC address {}.", mac_string))?;
+        let socket_address: SocketAddr = socket_string.parse().map_err(|_| format!("Could not parse socket address {}", socket_string))?;
+
+        if parts.next().is_some() {
+            return Result::Err(String::from("String must be in the format <mac_address>#<socket_address>."));
+        }
+
+        Result::Ok(DeviceAddress{
+            mac_address, socket_address
+        })
     }
 }
 

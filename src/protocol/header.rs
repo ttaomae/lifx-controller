@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{fmt, convert::TryInto, str::FromStr};
 
 // A LIFX packet header frame.
 #[derive(Debug, Copy, Clone)]
@@ -98,15 +98,15 @@ impl From<&[u8]> for FrameAddress {
 }
 
 /// A device MAC address.
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub(crate) struct MacAddress {
     pub(crate) address: [u8; 6],
 }
 
-impl std::fmt::Debug for MacAddress {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl fmt::Display for MacAddress {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(
-            f,
+            fmt,
             "{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}",
             self.address[0],
             self.address[1],
@@ -115,6 +115,25 @@ impl std::fmt::Debug for MacAddress {
             self.address[4],
             self.address[5]
         )
+    }
+}
+
+impl FromStr for MacAddress {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut address = [0u8; 6];
+
+        for (n, byte) in s.split(':').into_iter().enumerate() {
+            if n >= 6 {
+                return Result::Err(format!("Could not parse MAC address: {}.", s));
+            }
+            address[n] = u8::from_str_radix(&byte, 16).map_err(|_| format!("Could not parse MAC Address: {}.", s))?;
+        }
+
+        Result::Ok(MacAddress {
+            address
+        })
     }
 }
 
