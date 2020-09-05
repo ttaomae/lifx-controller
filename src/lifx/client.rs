@@ -56,7 +56,7 @@ impl Client {
         Result::Ok(state)
     }
 
-    pub(crate) fn turn_on(&self, device: &Device, duration: Duration) -> io::Result<()> {
+    pub(crate) fn transition_on(&self, device: &Device, duration: Duration) -> io::Result<()> {
         light::set_power(
             &self.socket,
             device,
@@ -68,7 +68,11 @@ impl Client {
         Result::Ok(())
     }
 
-    pub(crate) fn turn_off(&self, device: &Device, duration: Duration) -> io::Result<()> {
+    pub(crate) fn turn_on(&self, device: &Device) -> io::Result<()> {
+        self.transition_on(device, ZERO_DURATION)
+    }
+
+    pub(crate) fn transition_off(&self, device: &Device, duration: Duration) -> io::Result<()> {
         light::set_power(
             &self.socket,
             device,
@@ -80,10 +84,14 @@ impl Client {
         Result::Ok(())
     }
 
+    pub(crate) fn turn_off(&self, device: &Device) -> io::Result<()> {
+        self.transition_off(device, ZERO_DURATION)
+    }
+
     pub(crate) fn toggle_power(&self, device: &Device, duration: Duration) -> io::Result<()> {
         match self.get_state(device)?.power() {
-            Power::Off => self.turn_on(device, duration),
-            Power::On => self.turn_off(device, duration),
+            Power::Off => self.transition_on(device, duration),
+            Power::On => self.transition_off(device, duration),
             Power::Unknown(n) => Result::Err(io::Error::new(
                 io::ErrorKind::Other,
                 format!("Unknown power {}", n),
@@ -91,14 +99,14 @@ impl Client {
         }
     }
 
-    pub(crate) fn set_brightness(
+    pub(crate) fn transition_brightness(
         &self,
         device: &Device,
         brightness: f32,
         duration: Duration,
     ) -> io::Result<()> {
         if brightness <= 0.0 {
-            self.turn_off(device, duration)?;
+            self.transition_off(device, duration)?;
         } else {
             let state = self.get_state(device)?;
             let color = state.color();
@@ -106,7 +114,7 @@ impl Client {
 
             // Turn on before adjusting brightness, if necessary.
             match state.power() {
-                Power::Off | Power::Unknown(_) => self.turn_on(device, ZERO_DURATION)?,
+                Power::Off | Power::Unknown(_) => self.turn_on(device)?,
                 Power::On => (),
             }
             light::set_color(
@@ -122,7 +130,11 @@ impl Client {
         Result::Ok(())
     }
 
-    pub(crate) fn set_color(
+    pub(crate) fn set_brightness(&self, device: &Device, brightness: f32) -> io::Result<()> {
+        self.transition_brightness(device, brightness, ZERO_DURATION)
+    }
+
+    pub(crate) fn transition_color(
         &self,
         device: &Device,
         color: Color,
@@ -139,7 +151,11 @@ impl Client {
         Result::Ok(())
     }
 
-    pub(crate) fn set_temperature(
+    pub(crate) fn set_color(&self, device: &Device, color: Color) -> io::Result<()> {
+        self.transition_color(device, color, ZERO_DURATION)
+    }
+
+    pub(crate) fn transition_temperature(
         &self,
         device: &Device,
         temperature: u16,
@@ -156,6 +172,10 @@ impl Client {
             to_millis(duration),
         )?;
         Result::Ok(())
+    }
+
+    pub(crate) fn set_temperature(&self, device: &Device, temperature: u16) -> io::Result<()> {
+        self.transition_temperature(device, temperature, ZERO_DURATION)
     }
 
     /// Return current sequence value then increment.
