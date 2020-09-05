@@ -5,6 +5,7 @@ use std::{
 };
 
 pub(crate) mod client;
+pub(crate) mod color;
 pub(crate) mod device;
 pub(crate) mod light;
 pub(crate) mod protocol;

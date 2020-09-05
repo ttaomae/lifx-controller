@@ -1,9 +1,13 @@
 use super::{
+    color::Color,
     device::{self, Device},
     light,
     protocol::message::{Power, StatePayload},
 };
-use std::{cell::Cell, collections::HashSet, io, net::UdpSocket};
+use std::{cell::Cell, collections::HashSet, io, net::UdpSocket, time::Duration};
+
+const ZERO_DURATION: Duration = Duration::from_secs(0);
+const MAX_DURATION: Duration = Duration::from_millis(u32::MAX as u64);
 
 pub(crate) struct Client {
     socket: UdpSocket,
@@ -26,7 +30,7 @@ impl Client {
     pub(crate) fn discover(&mut self) -> Result<HashSet<Device>, io::Error> {
         let device_addresses =
             device::get_device_address(&self.socket, self.source, self.sequence())?;
-        // let mut devices = HashSet::new();
+
         for address in device_addresses {
             let mac_address = address.mac_address();
             let socket_address = address.socket_address();
@@ -52,31 +56,31 @@ impl Client {
         Result::Ok(state)
     }
 
-    pub(crate) fn turn_on(&self, device: &Device, duration: u32) -> io::Result<()> {
+    pub(crate) fn turn_on(&self, device: &Device, duration: Duration) -> io::Result<()> {
         light::set_power(
             &self.socket,
             device,
             self.source,
             self.sequence(),
             Power::On,
-            duration,
+            to_millis(duration),
         )?;
         Result::Ok(())
     }
 
-    pub(crate) fn turn_off(&self, device: &Device, duration: u32) -> io::Result<()> {
+    pub(crate) fn turn_off(&self, device: &Device, duration: Duration) -> io::Result<()> {
         light::set_power(
             &self.socket,
             device,
             self.source,
             self.sequence(),
             Power::Off,
-            duration,
+            to_millis(duration),
         )?;
         Result::Ok(())
     }
 
-    pub(crate) fn toggle_power(&self, device: &Device, duration: u32) -> io::Result<()> {
+    pub(crate) fn toggle_power(&self, device: &Device, duration: Duration) -> io::Result<()> {
         match self.get_state(device)?.power() {
             Power::Off => self.turn_on(device, duration),
             Power::On => self.turn_off(device, duration),
@@ -87,10 +91,88 @@ impl Client {
         }
     }
 
+    pub(crate) fn set_brightness(
+        &self,
+        device: &Device,
+        brightness: f32,
+        duration: Duration,
+    ) -> io::Result<()> {
+        if brightness <= 0.0 {
+            self.turn_off(device, duration)?;
+        } else {
+            let state = self.get_state(device)?;
+            let color = state.color();
+            let brightness_value = (f32::min(brightness, 1.0) * 0xffff as f32) as u16;
+
+            // Turn on before adjusting brightness, if necessary.
+            match state.power() {
+                Power::Off | Power::Unknown(_) => self.turn_on(device, ZERO_DURATION)?,
+                Power::On => (),
+            }
+            light::set_color(
+                &self.socket,
+                device,
+                self.source,
+                self.sequence(),
+                color.with_brightness(brightness_value),
+                to_millis(duration),
+            )?;
+        }
+
+        Result::Ok(())
+    }
+
+    pub(crate) fn set_color(
+        &self,
+        device: &Device,
+        color: Color,
+        duration: Duration,
+    ) -> io::Result<()> {
+        light::set_color(
+            &self.socket,
+            &device,
+            self.source,
+            self.sequence(),
+            color.into(),
+            to_millis(duration),
+        )?;
+        Result::Ok(())
+    }
+
+    pub(crate) fn set_temperature(
+        &self,
+        device: &Device,
+        temperature: u16,
+        duration: Duration,
+    ) -> io::Result<()> {
+        let hsbk = self.get_state(device)?.color();
+
+        light::set_color(
+            &self.socket,
+            device,
+            self.source,
+            self.sequence(),
+            hsbk.with_hue(0).with_saturation(0).with_kelvin(temperature),
+            to_millis(duration),
+        )?;
+        Result::Ok(())
+    }
+
+    /// Return current sequence value then increment.
     fn sequence(&self) -> u8 {
         let sequence = self.sequence.get();
         self.sequence.set(sequence.wrapping_add(1));
         sequence
+    }
+}
+
+fn to_millis(duration: Duration) -> u32 {
+    if duration < ZERO_DURATION {
+        0u32
+    } else if duration > MAX_DURATION {
+        u32::MAX
+    } else {
+        duration.as_millis() as u32
     }
 }
 

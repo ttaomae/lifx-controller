@@ -179,6 +179,42 @@ impl Hsbk {
             kelvin,
         }
     }
+
+    pub(crate) fn with_hue(&self, hue: u16) -> Hsbk {
+        Hsbk {
+            hue,
+            saturation: self.saturation,
+            brightness: self.brightness,
+            kelvin: self.kelvin,
+        }
+    }
+
+    pub(crate) fn with_saturation(&self, saturation: u16) -> Hsbk {
+        Hsbk {
+            hue: self.hue,
+            saturation,
+            brightness: self.brightness,
+            kelvin: self.kelvin,
+        }
+    }
+
+    pub(crate) fn with_brightness(&self, brightness: u16) -> Hsbk {
+        Hsbk {
+            hue: self.hue,
+            saturation: self.saturation,
+            brightness,
+            kelvin: self.kelvin,
+        }
+    }
+
+    pub(crate) fn with_kelvin(&self, kelvin: u16) -> Hsbk {
+        Hsbk {
+            hue: self.hue,
+            saturation: self.saturation,
+            brightness: self.brightness,
+            kelvin,
+        }
+    }
 }
 
 impl ClientPayload for Hsbk {
@@ -207,6 +243,7 @@ impl DevicePayload for Hsbk {
     }
 }
 
+#[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub(crate) struct StatePayload {
     color: Hsbk,
@@ -217,6 +254,10 @@ pub(crate) struct StatePayload {
 }
 
 impl StatePayload {
+    pub(crate) fn color(&self) -> Hsbk {
+        self.color.clone()
+    }
+
     pub(crate) fn power(&self) -> Power {
         match self.power {
             0 => Power::Off,
