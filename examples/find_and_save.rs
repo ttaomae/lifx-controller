@@ -1,15 +1,29 @@
 use lifx::{self, client::Client};
 use std::{
     collections::HashSet,
-    io,
+    io::{self,Write},
     net::UdpSocket,
     sync::{Arc, Mutex},
     thread,
-    time::Duration,
+    time::Duration, path::{PathBuf, Path}, fs::File,
 };
 use thread::JoinHandle;
 
 fn main() {
+    let mut args = std::env::args();
+    let filename = args.nth(1);
+    if filename.is_none() {
+        eprintln!("No filename provided.");
+        std::process::exit(1);
+    }
+    let filename = filename.unwrap();
+    let path = PathBuf::from(&filename);
+
+    if path.exists() {
+        eprintln!("Output file {} already exists.", filename);
+        std::process::exit(1)
+    }
+
     println!("Searching for devices. Press [Enter] when all devices have been found.");
 
     let stop_searching = Arc::new(Mutex::new(false));
@@ -29,7 +43,14 @@ fn main() {
                 }
             }
             if *stop.lock().unwrap() {
-                println!("{:?}", devices);
+                println!("Saving device addresses to file.");
+                let mut file = File::create(path)?;
+
+                for device in devices {
+                    let mut address = device.address().to_string();
+                    address.push('\n');
+                    file.write_all(address.as_bytes())?;
+                }
                 return io::Result::Ok(());
             }
         }

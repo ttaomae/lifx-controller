@@ -39,7 +39,7 @@ impl Client {
         Result::Ok(self.devices.clone())
     }
 
-    pub(crate) fn find_device(&mut self, device_address: DeviceAddress) -> io::Result<Device> {
+    pub fn find_device(&mut self, device_address: DeviceAddress) -> io::Result<Device> {
         let label = device::get_label(&self.socket, &device_address, self.source, self.sequence())?;
         let group = device::get_group(&self.socket, &device_address, self.source, self.sequence())?;
         let location =
