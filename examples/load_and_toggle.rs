@@ -1,8 +1,14 @@
-use std::{fs::File, path::PathBuf, io::{BufRead, Read, BufReader, self}, collections::{HashSet, HashMap}, net::UdpSocket, time::Duration};
 use lifx::{client::Client, device::DeviceAddress};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::{self, BufRead, BufReader, Read},
+    net::UdpSocket,
+    path::PathBuf,
+    time::Duration,
+};
 
 fn main() -> io::Result<()> {
-
     let mut args = std::env::args();
     let filename = args.nth(1);
     if filename.is_none() {

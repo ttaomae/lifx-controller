@@ -1,11 +1,13 @@
 use lifx::{self, client::Client};
 use std::{
     collections::HashSet,
-    io::{self,Write},
+    fs::File,
+    io::{self, Write},
     net::UdpSocket,
+    path::{Path, PathBuf},
     sync::{Arc, Mutex},
     thread,
-    time::Duration, path::{PathBuf, Path}, fs::File,
+    time::Duration,
 };
 use thread::JoinHandle;
 
