@@ -3,7 +3,7 @@ use super::{
     protocol::{
         header::LightMessageType,
         message::{Hsbk, Message, Power, SetColorPayload, SetPowerPayload, StatePayload},
-        packet::{PacketBuilder,send_packet,send_packet_no_response},
+        packet::{send_packet, send_packet_no_response, PacketBuilder},
     },
 };
 use std::{io, net::UdpSocket};

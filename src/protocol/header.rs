@@ -1,4 +1,4 @@
-use std::{fmt, convert::TryInto, str::FromStr};
+use std::{convert::TryInto, fmt, str::FromStr};
 
 // A LIFX packet header frame.
 #[derive(Debug, Copy, Clone)]
@@ -128,12 +128,11 @@ impl FromStr for MacAddress {
             if n >= 6 {
                 return Result::Err(format!("Could not parse MAC address: {}.", s));
             }
-            address[n] = u8::from_str_radix(&byte, 16).map_err(|_| format!("Could not parse MAC Address: {}.", s))?;
+            address[n] = u8::from_str_radix(&byte, 16)
+                .map_err(|_| format!("Could not parse MAC Address: {}.", s))?;
         }
 
-        Result::Ok(MacAddress {
-            address
-        })
+        Result::Ok(MacAddress { address })
     }
 }
 

@@ -261,8 +261,7 @@ impl StatePayload {
     pub(crate) fn power(&self) -> Power {
         match self.power {
             0 => Power::Off,
-            0xffff => Power::On,
-            n => Power::Unknown(n),
+            n => Power::On(n),
         }
     }
 }
@@ -304,12 +303,15 @@ impl ClientPayload for SetColorPayload {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum Power {
+    // Officially the LIFX docs state that only 0 and 0xffff are valid values.
+    // However, devices will sometimes responsd with different values, which
+    // seem to indicate that they are powered on.
     Off,
-    On,
-    Unknown(u16),
+    On(u16),
 }
+
 #[derive(Debug, Clone)]
 pub(crate) struct SetPowerPayload {
     power: Power,
@@ -327,8 +329,7 @@ impl ClientPayload for SetPowerPayload {
         let mut result = Vec::new();
         let level = match self.power {
             Power::Off => u16::MIN,
-            Power::On => u16::MAX,
-            Power::Unknown(n) => n,
+            Power::On(n) => n,
         };
         result.extend(level.to_le_bytes().iter());
         result.extend(self.duration.to_le_bytes().iter());

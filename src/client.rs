@@ -4,8 +4,8 @@ use super::{
     light,
     protocol::message::{Power, StatePayload},
 };
-use std::{cell::Cell, collections::HashSet, io, net::UdpSocket, time::Duration};
 use device::DeviceAddress;
+use std::{cell::Cell, collections::HashSet, io, net::UdpSocket, time::Duration};
 
 const ZERO_DURATION: Duration = Duration::from_secs(0);
 const MAX_DURATION: Duration = Duration::from_millis(u32::MAX as u64);
@@ -40,16 +40,12 @@ impl Client {
     }
 
     pub(crate) fn find_device(&mut self, device_address: DeviceAddress) -> io::Result<Device> {
-        let mac_address = device_address.mac_address();
-        let socket_address = device_address.socket_address();
-
         let label = device::get_label(&self.socket, &device_address, self.source, self.sequence())?;
         let group = device::get_group(&self.socket, &device_address, self.source, self.sequence())?;
         let location =
             device::get_location(&self.socket, &device_address, self.source, self.sequence())?;
         let device = Device::new(
-            mac_address,
-            socket_address,
+            device_address,
             trim_trailing_null(label.label),
             trim_trailing_null(group.label),
             trim_trailing_null(location.label),
@@ -68,7 +64,7 @@ impl Client {
             device,
             self.source,
             self.sequence(),
-            Power::On,
+            Power::On(0xffff),
             to_millis(duration),
         )?;
         Result::Ok(())
@@ -97,11 +93,7 @@ impl Client {
     pub fn toggle_power(&self, device: &Device, duration: Duration) -> io::Result<()> {
         match self.get_state(device)?.power() {
             Power::Off => self.transition_on(device, duration),
-            Power::On => self.transition_off(device, duration),
-            Power::Unknown(n) => Result::Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("Unknown power {}", n),
-            )),
+            Power::On(_) => self.transition_off(device, duration),
         }
     }
 
@@ -119,9 +111,8 @@ impl Client {
             let brightness_value = (f32::min(brightness, 1.0) * 0xffff as f32) as u16;
 
             // Turn on before adjusting brightness, if necessary.
-            match state.power() {
-                Power::Off | Power::Unknown(_) => self.turn_on(device)?,
-                Power::On => (),
+            if state.power() == Power::Off {
+                self.turn_on(device)?;
             }
             light::set_color(
                 &self.socket,

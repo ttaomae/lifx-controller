@@ -1,6 +1,10 @@
 use std::collections::HashSet;
 use std::io;
-use std::{fmt, net::{Ipv4Addr, SocketAddr, UdpSocket}, str::FromStr};
+use std::{
+    fmt,
+    net::{Ipv4Addr, SocketAddr, UdpSocket},
+    str::FromStr,
+};
 
 use super::protocol::header::*;
 use super::protocol::message::*;
@@ -8,8 +12,7 @@ use super::protocol::packet::*;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct Device {
-    mac_address: MacAddress,
-    socket_address: SocketAddr,
+    address: DeviceAddress,
     label: String,
     group: String,
     location: String,
@@ -17,32 +20,38 @@ pub struct Device {
 
 impl Device {
     pub(crate) fn new(
-        mac_address: MacAddress,
-        socket_address: SocketAddr,
+        address: DeviceAddress,
         label: String,
         group: String,
         location: String,
     ) -> Device {
         Device {
-            mac_address,
-            socket_address,
+            address,
             label,
             group,
             location,
         }
     }
 
+    pub fn label<'a>(&'a self) -> &'a String {
+        &self.label
+    }
+
+    pub fn address(&self) -> DeviceAddress {
+        self.address
+    }
+
     pub(crate) fn mac_address(&self) -> MacAddress {
-        self.mac_address
+        self.address.mac_address
     }
 
     pub(crate) fn socket_address(&self) -> SocketAddr {
-        self.socket_address
+        self.address.socket_address
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
-pub(crate) struct DeviceAddress {
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct DeviceAddress {
     mac_address: MacAddress,
     socket_address: SocketAddr,
 }
@@ -69,7 +78,9 @@ impl FromStr for DeviceAddress {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if !s.contains('#') {
-            return Result::Err(String::from("String must be in the format <mac_address>#<socket_address>."));
+            return Result::Err(String::from(
+                "String must be in the format <mac_address>#<socket_address>.",
+            ));
         }
         let mut parts = s.split('#');
 
@@ -77,15 +88,22 @@ impl FromStr for DeviceAddress {
         let mac_string = parts.next().unwrap();
         let socket_string = parts.next().unwrap();
 
-        let mac_address: MacAddress = mac_string.parse().map_err(|_| format!("Could not parse MAC address {}.", mac_string))?;
-        let socket_address: SocketAddr = socket_string.parse().map_err(|_| format!("Could not parse socket address {}", socket_string))?;
+        let mac_address: MacAddress = mac_string
+            .parse()
+            .map_err(|_| format!("Could not parse MAC address {}.", mac_string))?;
+        let socket_address: SocketAddr = socket_string
+            .parse()
+            .map_err(|_| format!("Could not parse socket address {}", socket_string))?;
 
         if parts.next().is_some() {
-            return Result::Err(String::from("String must be in the format <mac_address>#<socket_address>."));
+            return Result::Err(String::from(
+                "String must be in the format <mac_address>#<socket_address>.",
+            ));
         }
 
-        Result::Ok(DeviceAddress{
-            mac_address, socket_address
+        Result::Ok(DeviceAddress {
+            mac_address,
+            socket_address,
         })
     }
 }
