@@ -68,7 +68,7 @@ impl FrameAddress {
         let mut bytes: Vec<u8> = self.target.as_bytes();
         // Combine two 0 bytes from `target` with following reserved 48 bits (6 bytes).
         bytes.extend([0u8; 8].iter());
-        bytes.push(0x00 | (self.res_required as u8) | ((self.ack_required as u8) << 1));
+        bytes.push(self.res_required as u8 | (self.ack_required as u8) << 1);
         bytes.push(self.sequence);
         bytes
     }
@@ -124,7 +124,7 @@ impl FromStr for MacAddress {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut address = [0u8; 6];
 
-        for (n, byte) in s.split(':').into_iter().enumerate() {
+        for (n, byte) in s.split(':').enumerate() {
             if n >= 6 {
                 return Result::Err(format!("Could not parse MAC address: {}.", s));
             }

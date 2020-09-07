@@ -27,7 +27,7 @@ impl Packet {
         bytes
     }
 
-    pub(crate) fn message<'a>(&'a self) -> &'a Message {
+    pub(crate) fn message(&self) -> &Message {
         &self.message
     }
 }

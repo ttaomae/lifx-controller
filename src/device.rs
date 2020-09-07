@@ -33,7 +33,7 @@ impl Device {
         }
     }
 
-    pub fn label<'a>(&'a self) -> &'a String {
+    pub fn label(&self) -> &String {
         &self.label
     }
 

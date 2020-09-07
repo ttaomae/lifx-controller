@@ -17,7 +17,7 @@ pub(crate) enum Message {
 
 impl Message {
     pub(crate) fn from(message_type: MessageType, bytes: &[u8]) -> Message {
-        if bytes.len() == 0 {
+        if bytes.is_empty() {
             return Message::Empty(message_type);
         }
 
