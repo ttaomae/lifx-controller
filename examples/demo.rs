@@ -20,7 +20,7 @@ fn main() -> io::Result<()> {
         for _ in 0..36 {
             client.transition_color(&device, color, Duration::from_millis(500))?;
             std::thread::sleep(Duration::from_millis(500));
-            color = color.add_degrees(10.0);
+            color = color.plus_degrees(10.0);
         }
 
         client.toggle_power(&device, Duration::from_secs(0))?;
