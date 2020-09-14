@@ -94,11 +94,15 @@ impl Client {
         self.transition_off(device, ZERO_DURATION)
     }
 
-    pub fn toggle_power(&self, device: &Device, duration: Duration) -> io::Result<()> {
+    pub fn transition_toggle(&self, device: &Device, duration: Duration) -> io::Result<()> {
         match self.get_state(device)?.power() {
             Power::Off => self.transition_on(device, duration),
             Power::On(_) => self.transition_off(device, duration),
         }
+    }
+
+    pub fn toggle_power(&self, device: &Device) -> io::Result<()> {
+        self.transition_toggle(device, ZERO_DURATION)
     }
 
     pub fn transition_brightness(
