@@ -1,10 +1,10 @@
-use lifx::{self, client::Client};
+use lifx_client::{self, client::Client};
 use std::{
     collections::HashSet,
     fs::File,
     io::{self, Write},
     net::UdpSocket,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::{Arc, Mutex},
     thread,
     time::Duration,

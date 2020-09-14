@@ -53,6 +53,10 @@ impl Client {
         Result::Ok(device)
     }
 
+    pub fn get_devices(&self) -> &HashSet<Device> {
+        &self.devices
+    }
+
     pub(crate) fn get_state(&self, device: &Device) -> io::Result<StatePayload> {
         let state = light::get_state(&self.socket, device, self.source, self.sequence())?;
         Result::Ok(state)

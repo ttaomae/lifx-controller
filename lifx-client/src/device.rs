@@ -37,6 +37,13 @@ impl Device {
         &self.label
     }
 
+    pub fn group(&self) -> &String {
+        &self.group
+    }
+
+    pub fn location(&self) -> &String {
+        &self.location
+    }
     pub fn address(&self) -> DeviceAddress {
         self.address
     }

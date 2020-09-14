@@ -1,8 +1,8 @@
-use lifx::{client::Client, device::DeviceAddress};
+use lifx_client::{client::Client, device::DeviceAddress};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fs::File,
-    io::{self, BufRead, BufReader, Read},
+    io::{self, BufRead, BufReader},
     net::UdpSocket,
     path::PathBuf,
     time::Duration,

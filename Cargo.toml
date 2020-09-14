@@ -1,8 +1,5 @@
-[package]
-name = "lifx"
-version = "0.1.0"
-authors = ["Todd Taomae <ttaomae@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-rand = "0.7"
+[workspace]
+members = [
+    "lifx-client",
+    "lifx-web",
+]
