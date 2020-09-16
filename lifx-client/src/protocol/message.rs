@@ -180,6 +180,18 @@ impl Hsbk {
         }
     }
 
+    pub(crate) fn hue(&self) -> u16 {
+        self.hue
+    }
+
+    pub(crate) fn saturation(&self) -> u16 {
+        self.saturation
+    }
+
+    pub(crate) fn brightness(&self) -> u16 {
+        self.brightness
+    }
+
     pub(crate) fn with_hue(&self, hue: u16) -> Hsbk {
         Hsbk {
             hue,

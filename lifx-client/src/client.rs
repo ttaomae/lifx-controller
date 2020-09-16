@@ -53,6 +53,10 @@ impl Client {
         Result::Ok(device)
     }
 
+    pub fn forget_devices(&mut self) {
+        self.devices.clear();
+    }
+
     pub fn get_devices(&self) -> &HashSet<Device> {
         &self.devices
     }
@@ -60,6 +64,10 @@ impl Client {
     pub(crate) fn get_state(&self, device: &Device) -> io::Result<StatePayload> {
         let state = light::get_state(&self.socket, device, self.source, self.sequence())?;
         Result::Ok(state)
+    }
+
+    pub fn get_color(&self, device: &Device) -> io::Result<Color> {
+        Result::Ok(self.get_state(device)?.color().into())
     }
 
     pub fn transition_on(&self, device: &Device, duration: Duration) -> io::Result<()> {

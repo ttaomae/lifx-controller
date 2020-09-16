@@ -127,3 +127,13 @@ impl From<Color> for Hsbk {
         Hsbk::new(color.hue, color.saturation, color.brightness, 5750)
     }
 }
+
+impl From<Hsbk> for Color {
+    fn from(hsbk: Hsbk) -> Self {
+        Color {
+            hue: hsbk.hue(),
+            saturation: hsbk.saturation(),
+            brightness: hsbk.brightness(),
+        }
+    }
+}

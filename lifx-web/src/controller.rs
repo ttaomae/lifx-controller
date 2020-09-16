@@ -3,6 +3,8 @@ use rocket::{response::Responder, Response};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, io::Cursor, net::UdpSocket, sync::Mutex, time::Duration};
 
+use crate::forms::Brightness;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Devices {
     devices: HashSet<JsonDevice>,
@@ -47,7 +49,7 @@ impl LifxController {
         }
     }
 
-    pub(crate) fn discover(&self) -> Devices {
+    pub(crate) fn update(&self) -> Devices {
         let mut client = self.client.lock().unwrap();
         let devices = client
             .discover()
@@ -62,5 +64,88 @@ impl LifxController {
         let client = self.client.lock().unwrap();
         let devices = client.get_devices().iter().map(|d| d.into()).collect();
         Devices { devices }
+    }
+
+    pub(crate) fn delete_lights(&self) {
+        let mut client = self.client.lock().unwrap();
+        client.forget_devices();
+    }
+
+    pub(crate) fn toggle(&self, duration: u32) {
+        let client = self.client.lock().unwrap();
+        for device in client.get_devices() {
+            client.transition_toggle(device, Duration::from_millis(duration as u64));
+        }
+    }
+
+    pub(crate) fn on(&self, duration: u32) {
+        let client = self.client.lock().unwrap();
+        for device in client.get_devices() {
+            client.transition_on(device, Duration::from_millis(duration as u64));
+        }
+    }
+
+    pub(crate) fn off(&self, duration: u32) {
+        let client = self.client.lock().unwrap();
+        for device in client.get_devices() {
+            client.transition_off(device, Duration::from_millis(duration as u64));
+        }
+    }
+
+    pub(crate) fn set_brightness(&self, brightness: f32, duration: u32) {
+        let client = self.client.lock().unwrap();
+        for device in client.get_devices() {
+            client.transition_brightness(
+                device,
+                brightness,
+                Duration::from_millis(duration as u64),
+            );
+        }
+    }
+
+    pub(crate) fn set_temperature(&self, temperature: u16, duration: u32) {
+        let client = self.client.lock().unwrap();
+        for device in client.get_devices() {
+            client.transition_temperature(
+                device,
+                temperature,
+                Duration::from_millis(duration as u64),
+            );
+        }
+    }
+
+    pub(crate) fn update_lights(
+        &self,
+        hue: Option<f32>,
+        saturation: Option<f32>,
+        brightness: Option<f32>,
+        duration: Option<u32>,
+    ) {
+        let client = self.client.lock().unwrap();
+        for device in client.get_devices() {
+            let mut color = client.get_color(device).unwrap();
+            dbg!(&color);
+
+            if let Some(hue) = hue {
+                color = color.with_hue(hue);
+            }
+
+            if let Some(saturation) = saturation {
+                color = color.with_saturation(saturation);
+            }
+
+            if let Some(brightness) = brightness {
+                color = color.with_brightness(brightness);
+            }
+
+            let duration = if let Some(duration) = duration {
+                duration
+            } else {
+                0u32
+            };
+
+            dbg!(&color);
+            client.transition_color(device, color, Duration::from_millis(duration as u64));
+        }
     }
 }
