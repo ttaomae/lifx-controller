@@ -33,8 +33,7 @@ impl Client {
             device::get_device_address(&self.socket, self.source, self.sequence())?;
 
         for address in device_addresses {
-            let device = self.find_device(address)?;
-            self.devices.insert(device);
+            self.find_device(address)?;
         }
         Result::Ok(self.devices.clone())
     }
@@ -50,6 +49,8 @@ impl Client {
             trim_trailing_null(group.label),
             trim_trailing_null(location.label),
         );
+
+        self.devices.insert(device.clone());
         Result::Ok(device)
     }
 

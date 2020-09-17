@@ -3,7 +3,7 @@ use rocket::{response::Responder, Response};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, io::Cursor, net::UdpSocket, sync::Mutex, time::Duration};
 
-use crate::forms::Brightness;
+use crate::{config::AppConfig, forms::Brightness};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Devices {
@@ -36,6 +36,7 @@ impl From<&Device> for JsonDevice {
 
 pub(crate) struct LifxController {
     client: Mutex<Client>,
+    config: AppConfig,
 }
 
 impl LifxController {
@@ -43,9 +44,29 @@ impl LifxController {
         let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
         socket.set_read_timeout(Option::Some(Duration::from_millis(500)));
         let mut client = Client::new(socket);
-        client.discover();
+
+        let controller = LifxController {
+            client: Mutex::new(client),
+            config: AppConfig::new(),
+        };
+
+        controller.update();
+
+        controller
+    }
+
+    pub(crate) fn from_config(config: AppConfig) -> LifxController {
+        let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
+        socket.set_read_timeout(Option::Some(Duration::from_millis(500)));
+        let mut client = Client::new(socket);
+
+        for device in config.devices() {
+            client.find_device(device.parse().unwrap());
+        }
+
         LifxController {
             client: Mutex::new(client),
+            config,
         }
     }
 

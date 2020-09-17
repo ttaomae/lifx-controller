@@ -2,11 +2,15 @@
 #[macro_use]
 extern crate rocket;
 
+mod config;
 mod controller;
 mod forms;
 
-use forms::{Brightness, Duration, Temperature, Hsb};
-use rocket::{request::Form, response::content::Json, State, Config, config::Environment};
+use std::{fs::File, io};
+
+use forms::{Brightness, Duration, Hsb, Temperature};
+use io::{ErrorKind, Read};
+use rocket::{config::Environment, request::Form, response::content::Json, Config, State};
 
 use controller::{Devices, LifxController};
 
@@ -76,14 +80,24 @@ fn update_lights(controller: State<LifxController>, form: Form<Hsb>) {
     controller.update_lights(hue, saturation, brightness, duration);
 }
 
-fn main() {
+fn main() -> io::Result<()> {
+    let controller = match File::open("Lifx.toml") {
+        Ok(mut lifx_toml) => {
+            let mut buf = String::new();
+            lifx_toml.read_to_string(&mut buf)?;
+            LifxController::from_config(toml::from_str(&buf)?)
+        }
+        Err(ref e) if e.kind() == ErrorKind::NotFound => LifxController::new(),
+        Err(e) => return Result::Err(e),
+    };
+
     let config = Config::build(Environment::Staging)
         .address("0.0.0.0")
         .finalize()
         .unwrap();
 
     rocket::custom(config)
-        .manage(LifxController::new())
+        .manage(controller)
         .mount(
             "/",
             routes![
@@ -98,4 +112,6 @@ fn main() {
             ],
         )
         .launch();
+
+    Result::Ok(())
 }
