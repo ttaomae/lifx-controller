@@ -26,26 +26,26 @@ pub(crate) struct Hsb {
     pub(crate) duration: Option<u32>,
 }
 
-#[derive(Clone)]
-pub(crate) enum Selector {
+#[derive(Copy, Clone)]
+pub(crate) enum Selector<'a> {
     AllSelector,
     NoneSelector,
-    LabelSelector(String),
-    GroupSelector(String),
-    LocationSelector(String),
+    LabelSelector(&'a str),
+    GroupSelector(&'a str),
+    LocationSelector(&'a str),
 }
 
-impl Selector {
+impl <'a> Selector<'a> {
     pub(crate) fn parse(s: &str) -> Selector {
         if s.starts_with("label:") {
             let label = &s["label:".len()..];
-            Selector::LabelSelector(label.to_string())
+            Selector::LabelSelector(label)
         } else if s.starts_with("group:") {
             let label = &s["group:".len()..];
-            Selector::GroupSelector(label.to_string())
+            Selector::GroupSelector(label)
         } else if s.starts_with("location:") {
             let location = &s["location:".len()..];
-            Selector::LocationSelector(location.to_string())
+            Selector::LocationSelector(location)
         } else if s.eq("all") {
             Selector::AllSelector
         } else {

@@ -94,28 +94,28 @@ impl LifxController {
 
     pub(crate) fn toggle(&self, selector: Selector, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
+        for device in client.get_devices().iter().filter(|d| selector.filter(d)) {
             client.transition_toggle(device, Duration::from_millis(duration as u64));
         }
     }
 
     pub(crate) fn on(&self, selector: Selector, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
+        for device in client.get_devices().iter().filter(|d| selector.filter(d)) {
             client.transition_on(device, Duration::from_millis(duration as u64));
         }
     }
 
     pub(crate) fn off(&self, selector: Selector, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
+        for device in client.get_devices().iter().filter(|d| selector.filter(d)) {
             client.transition_off(device, Duration::from_millis(duration as u64));
         }
     }
 
     pub(crate) fn set_brightness(&self,  selector: Selector, brightness: f32, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
+        for device in client.get_devices().iter().filter(|d| selector.filter(d)) {
             client.transition_brightness(
                 device,
                 brightness,
@@ -126,7 +126,7 @@ impl LifxController {
 
     pub(crate) fn set_temperature(&self,  selector: Selector, temperature: u16, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
+        for device in client.get_devices().iter().filter(|d| selector.filter(d)) {
             client.transition_temperature(
                 device,
                 temperature,
@@ -144,7 +144,7 @@ impl LifxController {
         duration: Option<u32>,
     ) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
+        for device in client.get_devices().iter().filter(|d| selector.filter(d)) {
             let mut color = client.get_color(device).unwrap();
             dbg!(&color);
 
