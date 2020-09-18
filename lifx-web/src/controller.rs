@@ -3,7 +3,7 @@ use rocket::{response::Responder, Response};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, io::Cursor, net::UdpSocket, sync::Mutex, time::Duration};
 
-use crate::{config::AppConfig, forms::Brightness};
+use crate::{config::AppConfig, forms::Brightness, forms::Selector};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Devices {
@@ -92,30 +92,30 @@ impl LifxController {
         client.forget_devices();
     }
 
-    pub(crate) fn toggle(&self, duration: u32) {
+    pub(crate) fn toggle(&self, selector: Selector, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices() {
+        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
             client.transition_toggle(device, Duration::from_millis(duration as u64));
         }
     }
 
-    pub(crate) fn on(&self, duration: u32) {
+    pub(crate) fn on(&self, selector: Selector, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices() {
+        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
             client.transition_on(device, Duration::from_millis(duration as u64));
         }
     }
 
-    pub(crate) fn off(&self, duration: u32) {
+    pub(crate) fn off(&self, selector: Selector, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices() {
+        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
             client.transition_off(device, Duration::from_millis(duration as u64));
         }
     }
 
-    pub(crate) fn set_brightness(&self, brightness: f32, duration: u32) {
+    pub(crate) fn set_brightness(&self,  selector: Selector, brightness: f32, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices() {
+        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
             client.transition_brightness(
                 device,
                 brightness,
@@ -124,9 +124,9 @@ impl LifxController {
         }
     }
 
-    pub(crate) fn set_temperature(&self, temperature: u16, duration: u32) {
+    pub(crate) fn set_temperature(&self,  selector: Selector, temperature: u16, duration: u32) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices() {
+        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
             client.transition_temperature(
                 device,
                 temperature,
@@ -137,13 +137,14 @@ impl LifxController {
 
     pub(crate) fn update_lights(
         &self,
+        selector: Selector,
         hue: Option<f32>,
         saturation: Option<f32>,
         brightness: Option<f32>,
         duration: Option<u32>,
     ) {
         let client = self.client.lock().unwrap();
-        for device in client.get_devices() {
+        for device in client.get_devices().iter().filter(|d| selector.clone().filter(d)) {
             let mut color = client.get_color(device).unwrap();
             dbg!(&color);
 

@@ -8,7 +8,7 @@ mod forms;
 
 use std::{fs::File, io};
 
-use forms::{Brightness, Duration, Hsb, Temperature};
+use forms::{Brightness, Duration, Hsb, Temperature, Selector};
 use io::{ErrorKind, Read};
 use rocket::{config::Environment, request::Form, response::content::Json, Config, State};
 
@@ -28,56 +28,69 @@ fn delete_lights(controller: State<LifxController>) {
     controller.delete_lights();
 }
 
-#[post("/lights/toggle", data = "<form>")]
-fn toggle_lights(controller: State<LifxController>, form: Option<Form<Duration>>) {
-    match form {
-        Some(duration) => controller.toggle(duration.0.duration),
-        None => controller.toggle(0),
-    }
+#[post("/lights/<selector>/toggle", data = "<form>")]
+fn toggle_lights(controller: State<LifxController>, selector: String, form: Option<Form<Duration>>) {
+    let selector = Selector::parse(&selector);
+    let duration = match form {
+        Some(duration) => duration.0.duration,
+        None => 0,
+    };
+    controller.toggle(selector, duration);
 }
 
-#[post("/lights/on", data = "<form>")]
-fn lights_on(controller: State<LifxController>, form: Option<Form<Duration>>) {
-    match form {
-        Some(duration) => controller.on(duration.0.duration),
-        None => controller.on(0),
-    }
+#[post("/lights/<selector>/on", data = "<form>")]
+fn lights_on(controller: State<LifxController>, selector: String, form: Option<Form<Duration>>) {
+    let selector = Selector::parse(&selector);
+    let duration = match form {
+        Some(duration) => duration.0.duration,
+        None => 0,
+    };
+    controller.on(selector, duration);
 }
 
-#[post("/lights/off", data = "<form>")]
-fn lights_off(controller: State<LifxController>, form: Option<Form<Duration>>) {
-    match form {
-        Some(duration) => controller.off(duration.0.duration),
-        None => controller.off(0),
-    }
+#[post("/lights/<selector>/off", data = "<form>")]
+fn lights_off(controller: State<LifxController>, selector: String, form: Option<Form<Duration>>) {
+    let selector = Selector::parse(&selector);
+    let duration = match form {
+        Some(duration) => duration.0.duration,
+        None => 0,
+    };
+    controller.off(selector, duration);
 }
 
-#[post("/lights/brightness", data = "<form>")]
-fn lights_brightness(controller: State<LifxController>, form: Form<Brightness>) {
+#[post("/lights/<selector>/brightness", data = "<form>")]
+fn lights_brightness(controller: State<LifxController>, selector: String, form: Form<Brightness>) {
+    let selector = Selector::parse(&selector);
     let brightness = form.0.brightness;
-    match form.0.duration {
-        Some(duration) => controller.set_brightness(brightness, duration),
-        None => controller.set_brightness(brightness, 0),
-    }
+
+    let duration = if let Some(d) = form.0.duration {
+        d
+    } else {
+        0
+    };
+    controller.set_brightness(selector, brightness, duration);
 }
 
-#[post("/lights/temperature", data = "<form>")]
-fn lights_temperature(controller: State<LifxController>, form: Form<Temperature>) {
+#[post("/lights/<selector>/temperature", data = "<form>")]
+fn lights_temperature(controller: State<LifxController>, selector: String, form: Form<Temperature>) {
+    let selector = Selector::parse(&selector);
     let kelvin = form.0.kelvin;
-    match form.0.duration {
-        Some(duration) => controller.set_temperature(kelvin, duration),
-        None => controller.set_temperature(kelvin, 0),
-    }
+    let duration = if let Some(d) = form.0.duration {
+        d
+    } else {
+        0
+    };
+    controller.set_temperature(selector, kelvin, duration);
 }
 
-#[patch("/light/state", data = "<form>")]
-fn update_lights(controller: State<LifxController>, form: Form<Hsb>) {
-    dbg!(&form);
+#[patch("/lights/<selector>/state", data = "<form>")]
+fn update_lights(controller: State<LifxController>, selector: String, form: Form<Hsb>) {
+    let selector = Selector::parse(&selector);
     let hue = form.0.hue;
     let saturation = form.0.saturation;
     let brightness = form.0.brightness;
     let duration = form.0.duration;
-    controller.update_lights(hue, saturation, brightness, duration);
+    controller.update_lights(selector, hue, saturation, brightness, duration);
 }
 
 fn main() -> io::Result<()> {
