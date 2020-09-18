@@ -19,10 +19,11 @@ pub(crate) struct Temperature {
 }
 
 #[derive(Debug, FromForm)]
-pub(crate) struct Hsb {
+pub(crate) struct Hsbk {
     pub(crate) hue: Option<f32>,
     pub(crate) saturation: Option<f32>,
     pub(crate) brightness: Option<f32>,
+    pub(crate) kelvin: Option<u16>,
     pub(crate) duration: Option<u32>,
 }
 

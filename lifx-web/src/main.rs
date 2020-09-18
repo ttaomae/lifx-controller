@@ -84,13 +84,14 @@ fn lights_temperature(controller: State<LifxController>, selector: String, form:
 }
 
 #[patch("/lights/<selector>/state", data = "<form>")]
-fn update_lights(controller: State<LifxController>, selector: String, form: Form<Hsb>) {
+fn update_lights(controller: State<LifxController>, selector: String, form: Form<Hsbk>) {
     let selector = Selector::parse(&selector);
     let hue = form.0.hue;
     let saturation = form.0.saturation;
     let brightness = form.0.brightness;
+    let kelvin = form.0.kelvin;
     let duration = form.0.duration;
-    controller.update_lights(selector, hue, saturation, brightness, duration);
+    controller.update_lights(selector, hue, saturation, brightness, kelvin, duration);
 }
 
 fn main() -> io::Result<()> {

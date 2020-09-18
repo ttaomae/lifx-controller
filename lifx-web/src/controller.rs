@@ -141,23 +141,27 @@ impl LifxController {
         hue: Option<f32>,
         saturation: Option<f32>,
         brightness: Option<f32>,
+        kelvin: Option<u16>,
         duration: Option<u32>,
     ) {
         let client = self.client.lock().unwrap();
         for device in client.get_devices().iter().filter(|d| selector.filter(d)) {
             let mut color = client.get_color(device).unwrap();
-            dbg!(&color);
 
+            let mut set_color = false;
             if let Some(hue) = hue {
                 color = color.with_hue(hue);
+                set_color = true;
             }
 
             if let Some(saturation) = saturation {
                 color = color.with_saturation(saturation);
+                set_color = true;
             }
 
             if let Some(brightness) = brightness {
                 color = color.with_brightness(brightness);
+                set_color = true;
             }
 
             let duration = if let Some(duration) = duration {
@@ -166,8 +170,12 @@ impl LifxController {
                 0u32
             };
 
-            dbg!(&color);
-            client.transition_color(device, color, Duration::from_millis(duration as u64));
+            let duration = Duration::from_millis(duration as u64);
+            if set_color {
+                client.transition_color(device, color, duration);
+            } else if let Some(kelvin) = kelvin {
+                client.transition_temperature(device, kelvin, duration);
+            }
         }
     }
 }
