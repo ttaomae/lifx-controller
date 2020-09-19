@@ -6,13 +6,13 @@ mod config;
 mod controller;
 mod forms;
 
-use std::{fs::File, io};
+use std::{fs::File, io, collections::HashMap};
 
-use forms::{Brightness, Duration, Hsb, Temperature, Selector};
+use forms::{Brightness, Duration, Temperature, Selector, Hsbk, Preset};
 use io::{ErrorKind, Read};
 use rocket::{config::Environment, request::Form, response::content::Json, Config, State};
 
-use controller::{Devices, LifxController};
+use controller::{Devices, LifxController, Presets};
 
 #[get("/lights?<update>")]
 fn get_lights(controller: State<LifxController>, update: bool) -> Json<Devices> {
@@ -94,6 +94,21 @@ fn update_lights(controller: State<LifxController>, selector: String, form: Form
     controller.update_lights(selector, hue, saturation, brightness, kelvin, duration);
 }
 
+#[get("/presets")]
+fn get_presets(controller: State<LifxController>) -> Json<Presets> {
+    Json(controller.presets())
+}
+
+#[put("/presets/<label>", format = "json", data = "<preset>")]
+fn set_preset(controller: State<LifxController>, label: String, preset: rocket_contrib::json::Json<Preset>) {
+    controller.set_preset(preset.0);
+}
+
+#[post("/presets/<label>")]
+fn execute_preset(controller: State<LifxController>, label: String) {
+    controller.execute_preset(label);
+}
+
 fn main() -> io::Result<()> {
     let controller = match File::open("Lifx.toml") {
         Ok(mut lifx_toml) => {
@@ -123,6 +138,9 @@ fn main() -> io::Result<()> {
                 lights_brightness,
                 lights_temperature,
                 update_lights,
+                get_presets,
+                set_preset,
+                execute_preset,
             ],
         )
         .launch();

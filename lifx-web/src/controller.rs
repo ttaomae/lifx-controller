@@ -1,9 +1,9 @@
 use lifx_client::{client::Client, device::Device};
 use rocket::{response::Responder, Response};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, io::Cursor, net::UdpSocket, sync::Mutex, time::Duration};
+use std::{collections::HashSet, io::Cursor, net::UdpSocket, sync::Mutex, time::Duration, collections::HashMap};
 
-use crate::{config::AppConfig, forms::Brightness, forms::Selector};
+use crate::{config::AppConfig, forms::Brightness, forms::Selector, forms::Preset};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Devices {
@@ -34,9 +34,21 @@ impl From<&Device> for JsonDevice {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct Presets {
+    presets: Vec<Preset>,
+}
+
+impl<'r> Responder<'r> for Presets {
+    fn respond_to(self, request: &rocket::Request) -> rocket::response::Result<'r> {
+        let body = serde_json::to_string(&self).unwrap();
+        Response::build().sized_body(Cursor::new(body)).ok()
+    }
+}
+
 pub(crate) struct LifxController {
     client: Mutex<Client>,
-    config: AppConfig,
+    config: Mutex<AppConfig>,
 }
 
 impl LifxController {
@@ -47,7 +59,7 @@ impl LifxController {
 
         let controller = LifxController {
             client: Mutex::new(client),
-            config: AppConfig::new(),
+            config: Mutex::new(AppConfig::new()),
         };
 
         controller.update();
@@ -66,7 +78,7 @@ impl LifxController {
 
         LifxController {
             client: Mutex::new(client),
-            config,
+            config: Mutex::new(config),
         }
     }
 
@@ -175,6 +187,28 @@ impl LifxController {
                 client.transition_color(device, color, duration);
             } else if let Some(kelvin) = kelvin {
                 client.transition_temperature(device, kelvin, duration);
+            }
+        }
+    }
+
+    pub(crate) fn presets(&self) -> Presets {
+        let config = self.config.lock().unwrap();
+        let presets: Vec<Preset> = config.presets().values().cloned().collect();
+        Presets { presets }
+    }
+
+    pub(crate) fn set_preset(&self, preset: Preset) {
+        let mut config = self.config.lock().unwrap();
+        config.set_preset(preset.label(), preset);
+    }
+
+    pub(crate) fn execute_preset(&self, label: String) {
+        let config = self.config.lock().unwrap();
+        if let Some(preset) = config.get_preset(label) {
+            for action in preset.actions() {
+                let selector = action.selector();
+                let hsbk = action.hsbk();
+                self.update_lights(selector, hsbk.hue, hsbk.saturation, hsbk.brightness, hsbk.kelvin, hsbk.duration);
             }
         }
     }

@@ -1,5 +1,8 @@
+use std::{collections::HashMap, io::Cursor};
+
 use lifx_client::device::Device;
-use rocket::request::FromForm;
+use rocket::{request::FromForm, response::Responder, Response};
+use serde::{Deserialize, Serialize};
 
 #[derive(FromForm)]
 pub(crate) struct Duration {
@@ -18,7 +21,7 @@ pub(crate) struct Temperature {
     pub(crate) duration: Option<u32>,
 }
 
-#[derive(Debug, FromForm)]
+#[derive(Debug, Clone, FromForm, Serialize, Deserialize)]
 pub(crate) struct Hsbk {
     pub(crate) hue: Option<f32>,
     pub(crate) saturation: Option<f32>,
@@ -62,5 +65,37 @@ impl <'a> Selector<'a> {
             Selector::GroupSelector(ref group) => device.group() == group,
             Selector::LocationSelector(ref location) => device.location() == location,
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct Preset {
+    label: String,
+    actions: Vec<LightAction>,
+}
+
+impl Preset {
+    pub(crate) fn label(&self) -> String {
+        self.label.clone()
+    }
+
+    pub(crate) fn actions(&self) -> Vec<LightAction> {
+        self.actions.clone()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct LightAction {
+    selector: String,
+    hsbk: Hsbk,
+}
+
+impl LightAction {
+    pub(crate) fn selector(&self) -> Selector {
+        Selector::parse(&self.selector)
+    }
+
+    pub(crate) fn hsbk(&self) -> Hsbk {
+        self.hsbk.clone()
     }
 }
