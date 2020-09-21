@@ -192,6 +192,31 @@ impl Client {
         self.transition_temperature(device, temperature, ZERO_DURATION)
     }
 
+    pub fn transition_temperature_brightness(
+        &self,
+        device: &Device,
+        temperature: u16,
+        brightness: f32,
+        duration: Duration,
+    ) -> io::Result<()> {
+        let hsbk = self.get_state(device)?.color();
+        let brightness_value = (f32::min(brightness, 1.0) * 0xffff as f32) as u16;
+
+        light::set_color(
+            &self.socket,
+            device,
+            self.source,
+            self.sequence(),
+            hsbk.with_hue(0).with_saturation(0).with_kelvin(temperature).with_brightness(brightness_value),
+            to_millis(duration),
+        )?;
+        Result::Ok(())
+    }
+
+    pub fn set_temperature_brightness(&self, device: &Device, temperature: u16, brightness: f32) -> io::Result<()> {
+        self.transition_temperature_brightness(device, temperature, brightness, ZERO_DURATION)
+    }
+
     /// Return current sequence value then increment.
     fn sequence(&self) -> u8 {
         let sequence = self.sequence.get();

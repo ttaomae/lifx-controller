@@ -22,7 +22,7 @@ pub(crate) struct Temperature {
 }
 
 #[derive(Debug, Clone, FromForm, Serialize, Deserialize)]
-pub(crate) struct Hsbk {
+pub(crate) struct HsbkDuration {
     pub(crate) hue: Option<f32>,
     pub(crate) saturation: Option<f32>,
     pub(crate) brightness: Option<f32>,
@@ -70,29 +70,37 @@ impl <'a> Selector<'a> {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Preset {
-    label: String,
     actions: Vec<LightAction>,
 }
 
 impl Preset {
-    pub(crate) fn label(&self) -> String {
-        self.label.clone()
-    }
-
     pub(crate) fn actions(&self) -> Vec<LightAction> {
         self.actions.clone()
     }
 }
 
+#[derive(Debug, Clone, FromForm, Serialize, Deserialize)]
+pub(crate) struct Hsbk {
+    pub(crate) hue: Option<f32>,
+    pub(crate) saturation: Option<f32>,
+    pub(crate) brightness: Option<f32>,
+    pub(crate) kelvin: Option<u16>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct LightAction {
     selector: String,
+    duration: Option<u32>,
     hsbk: Hsbk,
 }
 
 impl LightAction {
     pub(crate) fn selector(&self) -> Selector {
         Selector::parse(&self.selector)
+    }
+
+    pub(crate) fn duration(&self) -> Option<u32> {
+        self.duration
     }
 
     pub(crate) fn hsbk(&self) -> Hsbk {

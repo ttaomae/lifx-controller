@@ -8,7 +8,7 @@ mod forms;
 
 use std::{fs::File, io, collections::HashMap};
 
-use forms::{Brightness, Duration, Temperature, Selector, Hsbk, Preset};
+use forms::{Brightness, Duration, Temperature, Selector, Hsbk, Preset, HsbkDuration};
 use io::{ErrorKind, Read};
 use rocket::{config::Environment, request::Form, response::content::Json, Config, State};
 
@@ -84,13 +84,17 @@ fn lights_temperature(controller: State<LifxController>, selector: String, form:
 }
 
 #[patch("/lights/<selector>/state", data = "<form>")]
-fn update_lights(controller: State<LifxController>, selector: String, form: Form<Hsbk>) {
+fn update_lights(controller: State<LifxController>, selector: String, form: Form<HsbkDuration>) {
     let selector = Selector::parse(&selector);
     let hue = form.0.hue;
     let saturation = form.0.saturation;
     let brightness = form.0.brightness;
     let kelvin = form.0.kelvin;
-    let duration = form.0.duration;
+    let duration = if let Some(d) = form.0.duration {
+        d
+    } else {
+        0
+    };
     controller.update_lights(selector, hue, saturation, brightness, kelvin, duration);
 }
 
@@ -101,7 +105,7 @@ fn get_presets(controller: State<LifxController>) -> Json<Presets> {
 
 #[put("/presets/<label>", format = "json", data = "<preset>")]
 fn set_preset(controller: State<LifxController>, label: String, preset: rocket_contrib::json::Json<Preset>) {
-    controller.set_preset(preset.0);
+    controller.set_preset(label, preset.0);
 }
 
 #[post("/presets/<label>")]

@@ -36,7 +36,7 @@ impl From<&Device> for JsonDevice {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Presets {
-    presets: Vec<Preset>,
+    presets: HashMap<String, Preset>,
 }
 
 impl<'r> Responder<'r> for Presets {
@@ -154,7 +154,7 @@ impl LifxController {
         saturation: Option<f32>,
         brightness: Option<f32>,
         kelvin: Option<u16>,
-        duration: Option<u32>,
+        duration: u32,
     ) {
         let client = self.client.lock().unwrap();
         for device in client.get_devices().iter().filter(|d| selector.filter(d)) {
@@ -176,16 +176,22 @@ impl LifxController {
                 set_color = true;
             }
 
-            let duration = if let Some(duration) = duration {
-                duration
-            } else {
-                0u32
-            };
-
             let duration = Duration::from_millis(duration as u64);
+
             if set_color {
+                if let Some(brightness) = brightness {
+                    if brightness > 0.0 {
+                        client.transition_on(device, duration);
+                    }
+                }
                 client.transition_color(device, color, duration);
             } else if let Some(kelvin) = kelvin {
+                if let Some(brightness) = brightness {
+                    client.transition_temperature_brightness(device, kelvin, brightness, duration);
+                    if brightness > 0.0 {
+                        client.transition_on(device, duration);
+                    }
+                }
                 client.transition_temperature(device, kelvin, duration);
             }
         }
@@ -193,13 +199,13 @@ impl LifxController {
 
     pub(crate) fn presets(&self) -> Presets {
         let config = self.config.lock().unwrap();
-        let presets: Vec<Preset> = config.presets().values().cloned().collect();
+        let presets = config.presets().clone();
         Presets { presets }
     }
 
-    pub(crate) fn set_preset(&self, preset: Preset) {
+    pub(crate) fn set_preset(&self, label: String, preset: Preset) {
         let mut config = self.config.lock().unwrap();
-        config.set_preset(preset.label(), preset);
+        config.set_preset(label, preset);
     }
 
     pub(crate) fn execute_preset(&self, label: String) {
@@ -208,7 +214,8 @@ impl LifxController {
             for action in preset.actions() {
                 let selector = action.selector();
                 let hsbk = action.hsbk();
-                self.update_lights(selector, hsbk.hue, hsbk.saturation, hsbk.brightness, hsbk.kelvin, hsbk.duration);
+                let duration = action.duration().unwrap_or(0);
+                self.update_lights(selector, hsbk.hue, hsbk.saturation, hsbk.brightness, hsbk.kelvin, duration);
             }
         }
     }
