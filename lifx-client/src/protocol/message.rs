@@ -192,6 +192,10 @@ impl Hsbk {
         self.brightness
     }
 
+    pub(crate) fn kelvin(&self) -> u16 {
+        self.kelvin
+    }
+
     pub(crate) fn with_hue(&self, hue: u16) -> Hsbk {
         Hsbk {
             hue,

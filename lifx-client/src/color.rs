@@ -5,6 +5,7 @@ pub struct Color {
     hue: u16,
     saturation: u16,
     brightness: u16,
+    kelvin: Option<u16>,
 }
 
 impl Color {
@@ -12,6 +13,7 @@ impl Color {
         hue: 0,
         saturation: 0,
         brightness: 0xffff,
+        kelvin: Option::None,
     };
     pub const RED: Color = Color::from_hue_u16(0x0000);
     pub const YELLOW: Color = Color::from_hue_u16(0x2aaa);
@@ -25,6 +27,7 @@ impl Color {
             hue,
             saturation: 0xffff,
             brightness: 0xffff,
+            kelvin: Option::None,
         }
     }
 
@@ -63,6 +66,7 @@ impl Color {
             hue: degrees_to_u16(hue_degrees),
             saturation: denormalize(saturation),
             brightness: denormalize(brightness),
+            kelvin: Option::None,
         }
     }
 
@@ -72,6 +76,7 @@ impl Color {
             hue: self.hue.wrapping_add(delta_hue),
             saturation: self.saturation,
             brightness: self.brightness,
+            kelvin: self.kelvin,
         }
     }
 
@@ -80,6 +85,7 @@ impl Color {
             hue: degrees_to_u16(hue),
             saturation: self.saturation,
             brightness: self.brightness,
+            kelvin: self.kelvin,
         }
     }
 
@@ -88,6 +94,7 @@ impl Color {
             hue: self.hue,
             saturation: denormalize(saturation),
             brightness: self.brightness,
+            kelvin: self.kelvin,
         }
     }
 
@@ -96,6 +103,7 @@ impl Color {
             hue: self.hue,
             saturation: self.saturation,
             brightness: denormalize(brightness),
+            kelvin: self.kelvin,
         }
     }
 }
@@ -123,8 +131,8 @@ fn degrees_to_u16(degrees: f32) -> u16 {
 
 impl From<Color> for Hsbk {
     fn from(color: Color) -> Self {
-        // Use average of temperature range [2500 - 9000].
-        Hsbk::new(color.hue, color.saturation, color.brightness, 5750)
+        // Use average of temperature range [2500 - 9000], if none is provided.
+        Hsbk::new(color.hue, color.saturation, color.brightness, color.kelvin.unwrap_or(5750))
     }
 }
 
@@ -134,6 +142,7 @@ impl From<Hsbk> for Color {
             hue: hsbk.hue(),
             saturation: hsbk.saturation(),
             brightness: hsbk.brightness(),
+            kelvin: Option::Some(hsbk.kelvin()),
         }
     }
 }
