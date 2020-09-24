@@ -132,7 +132,12 @@ fn degrees_to_u16(degrees: f32) -> u16 {
 impl From<Color> for Hsbk {
     fn from(color: Color) -> Self {
         // Use average of temperature range [2500 - 9000], if none is provided.
-        Hsbk::new(color.hue, color.saturation, color.brightness, color.kelvin.unwrap_or(5750))
+        Hsbk::new(
+            color.hue,
+            color.saturation,
+            color.brightness,
+            color.kelvin.unwrap_or(5750),
+        )
     }
 }
 

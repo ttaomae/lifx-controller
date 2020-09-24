@@ -207,13 +207,21 @@ impl Client {
             device,
             self.source,
             self.sequence(),
-            hsbk.with_hue(0).with_saturation(0).with_kelvin(temperature).with_brightness(brightness_value),
+            hsbk.with_hue(0)
+                .with_saturation(0)
+                .with_kelvin(temperature)
+                .with_brightness(brightness_value),
             to_millis(duration),
         )?;
         Result::Ok(())
     }
 
-    pub fn set_temperature_brightness(&self, device: &Device, temperature: u16, brightness: f32) -> io::Result<()> {
+    pub fn set_temperature_brightness(
+        &self,
+        device: &Device,
+        temperature: u16,
+        brightness: f32,
+    ) -> io::Result<()> {
         self.transition_temperature_brightness(device, temperature, brightness, ZERO_DURATION)
     }
 

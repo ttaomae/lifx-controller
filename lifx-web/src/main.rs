@@ -6,128 +6,160 @@ mod config;
 mod controller;
 mod forms;
 
-use std::{fs::File, io, collections::HashMap};
+use std::{fs::File, io};
 
-use forms::{Brightness, Duration, Temperature, Selector, Hsbk, Preset, HsbkDuration};
+use forms::{Brightness, Duration, HsbkDuration, Preset, Selector, Temperature};
 use io::{ErrorKind, Read};
-use rocket::{config::Environment, request::Form, response::content::Json, Config, State};
+use rocket::{
+    config::Environment, http::Status, request::Form, response::content::Json, Config, State,
+};
 
 use controller::{Devices, LifxController, Presets};
 
 #[get("/lights?<update>")]
-fn get_lights(controller: State<LifxController>, update: bool) -> Json<Devices> {
-    if update {
-        Json(controller.update())
+fn get_lights(controller: State<LifxController>, update: bool) -> Result<Json<Devices>, Status> {
+    let device_result = if update {
+        controller.update()
     } else {
-        Json(controller.get_lights())
+        controller.get_lights()
+    };
+
+    if let Ok(devices) = device_result {
+        Result::Ok(Json(devices))
+    } else {
+        Result::Err(Status::InternalServerError)
     }
 }
 
 #[delete("/lights")]
-fn delete_lights(controller: State<LifxController>) {
-    controller.delete_lights();
+fn delete_lights(controller: State<LifxController>) -> Result<(), Status> {
+    controller.delete_lights()
+        .map_err(|_| Status::InternalServerError)
 }
 
 #[post("/lights/<selector>/toggle", data = "<form>")]
-fn toggle_lights(controller: State<LifxController>, selector: String, form: Option<Form<Duration>>) {
+fn toggle_lights(
+    controller: State<LifxController>,
+    selector: String,
+    form: Form<Duration>,
+) -> Status {
     let selector = Selector::parse(&selector);
-    let duration = match form {
-        Some(duration) => duration.0.duration,
-        None => 0,
-    };
-    controller.toggle(selector, duration);
+    let duration = form.0.duration.unwrap_or(0);
+    controller
+        .toggle(selector, duration)
+        .map_or(Status::InternalServerError, |_| Status::NoContent)
 }
 
 #[post("/lights/<selector>/on", data = "<form>")]
-fn lights_on(controller: State<LifxController>, selector: String, form: Option<Form<Duration>>) {
+fn lights_on(
+    controller: State<LifxController>,
+    selector: String,
+    form: Form<Duration>,
+) -> Result<(), Status> {
     let selector = Selector::parse(&selector);
-    let duration = match form {
-        Some(duration) => duration.0.duration,
-        None => 0,
-    };
-    controller.on(selector, duration);
+    let duration = form.0.duration.unwrap_or(0);
+    controller
+        .on(selector, duration)
+        .map_err(|_| Status::InternalServerError)
 }
 
 #[post("/lights/<selector>/off", data = "<form>")]
-fn lights_off(controller: State<LifxController>, selector: String, form: Option<Form<Duration>>) {
+fn lights_off(
+    controller: State<LifxController>,
+    selector: String,
+    form: Form<Duration>,
+) -> Result<(), Status> {
     let selector = Selector::parse(&selector);
-    let duration = match form {
-        Some(duration) => duration.0.duration,
-        None => 0,
-    };
-    controller.off(selector, duration);
+    let duration = form.0.duration.unwrap_or(0);
+    controller
+        .off(selector, duration)
+        .map_err(|_| Status::InternalServerError)
 }
 
 #[post("/lights/<selector>/brightness", data = "<form>")]
-fn lights_brightness(controller: State<LifxController>, selector: String, form: Form<Brightness>) {
+fn lights_brightness(
+    controller: State<LifxController>,
+    selector: String,
+    form: Form<Brightness>,
+) -> Result<(), Status> {
     let selector = Selector::parse(&selector);
     let brightness = form.0.brightness;
-
-    let duration = if let Some(d) = form.0.duration {
-        d
-    } else {
-        0
-    };
-    controller.set_brightness(selector, brightness, duration);
+    let duration = form.0.duration.unwrap_or(0);
+    controller
+        .set_brightness(selector, brightness, duration)
+        .map_err(|_| Status::InternalServerError)
 }
 
 #[post("/lights/<selector>/temperature", data = "<form>")]
-fn lights_temperature(controller: State<LifxController>, selector: String, form: Form<Temperature>) {
+fn lights_temperature(
+    controller: State<LifxController>,
+    selector: String,
+    form: Form<Temperature>,
+) -> Result<(), Status> {
     let selector = Selector::parse(&selector);
     let kelvin = form.0.kelvin;
-    let duration = if let Some(d) = form.0.duration {
-        d
-    } else {
-        0
-    };
-    controller.set_temperature(selector, kelvin, duration);
+    let duration = form.0.duration.unwrap_or(0);
+    controller
+        .set_temperature(selector, kelvin, duration)
+        .map_err(|_| Status::InternalServerError)
 }
 
 #[patch("/lights/<selector>/state", data = "<form>")]
-fn update_lights(controller: State<LifxController>, selector: String, form: Form<HsbkDuration>) {
+fn update_lights(
+    controller: State<LifxController>,
+    selector: String,
+    form: Form<HsbkDuration>,
+) -> Result<(), Status> {
     let selector = Selector::parse(&selector);
     let hue = form.0.hue;
     let saturation = form.0.saturation;
     let brightness = form.0.brightness;
     let kelvin = form.0.kelvin;
-    let duration = if let Some(d) = form.0.duration {
-        d
-    } else {
-        0
-    };
-    controller.update_lights(selector, hue, saturation, brightness, kelvin, duration);
+    let duration = form.0.duration.unwrap_or(0);
+    controller
+        .update_lights(selector, hue, saturation, brightness, kelvin, duration)
+        .map_err(|_| Status::InternalServerError)
 }
 
 #[get("/presets")]
-fn get_presets(controller: State<LifxController>) -> Json<Presets> {
-    Json(controller.presets())
+fn get_presets(controller: State<LifxController>) -> Result<Json<Presets>, Status> {
+    let presets = controller.presets().map_err(|_| Status::InternalServerError)?;
+    Result::Ok(Json(presets))
 }
 
 #[put("/presets/<label>", format = "json", data = "<preset>")]
-fn set_preset(controller: State<LifxController>, label: String, preset: rocket_contrib::json::Json<Preset>) {
-    controller.set_preset(label, preset.0);
+fn set_preset(
+    controller: State<LifxController>,
+    label: String,
+    preset: rocket_contrib::json::Json<Preset>,
+) -> Result<(), Status> {
+    controller.set_preset(label, preset.0)
+        .map_err(|_| Status::InternalServerError)
 }
 
 #[post("/presets/<label>")]
-fn execute_preset(controller: State<LifxController>, label: String) {
-    controller.execute_preset(label);
+fn execute_preset(controller: State<LifxController>, label: String) -> Result<(), Status> {
+    controller
+        .execute_preset(label)
+        .map_err(|_| Status::InternalServerError)
 }
 
-fn main() -> io::Result<()> {
+fn main() -> controller::Result<()> {
     let controller = match File::open("Lifx.toml") {
         Ok(mut lifx_toml) => {
             let mut buf = String::new();
             lifx_toml.read_to_string(&mut buf)?;
-            LifxController::from_config(toml::from_str(&buf)?)
+            let config = toml::from_str(&buf).map_err(|_| "".to_string())?;
+            LifxController::from_config(config)
         }
         Err(ref e) if e.kind() == ErrorKind::NotFound => LifxController::new(),
-        Err(e) => return Result::Err(e),
-    };
+        Err(e) => return Result::Err(controller::Error(e.to_string())),
+    }?;
 
     let config = Config::build(Environment::Staging)
         .address("0.0.0.0")
         .finalize()
-        .unwrap();
+        .map_err(|e| e.to_string())?;
 
     rocket::custom(config)
         .manage(controller)
