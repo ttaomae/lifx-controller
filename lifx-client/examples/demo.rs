@@ -23,7 +23,7 @@ fn main() -> io::Result<()> {
             color = color.plus_degrees(10.0);
         }
 
-        client.toggle_power(&device, Duration::from_secs(0))?;
+        client.toggle_power(&device)?;
     }
     Result::Ok(())
 }

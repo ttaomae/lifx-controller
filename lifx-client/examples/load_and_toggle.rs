@@ -43,7 +43,7 @@ fn main() -> io::Result<()> {
     }
 
     for device in devices {
-        client.toggle_power(&device, Duration::from_secs(0))?;
+        client.toggle_power(&device)?;
     }
 
     Result::Ok(())
