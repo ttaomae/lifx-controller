@@ -1,8 +1,8 @@
 use lifx_client::{client::Client, device::Device};
-use rocket::{response::Responder, Response, http::Status};
+use rocket::{http::Status, response::Responder, Response};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap, collections::HashSet, io, io::Cursor, net::UdpSocket, result,
+    collections::HashMap, collections::HashSet, fmt, io, io::Cursor, net::UdpSocket, result,
     sync::Mutex, sync::MutexGuard, time::Duration,
 };
 
@@ -291,5 +291,11 @@ impl From<io::Error> for Error {
 impl From<String> for Error {
     fn from(s: String) -> Self {
         Error(s)
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
