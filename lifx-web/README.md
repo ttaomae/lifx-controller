@@ -119,7 +119,7 @@ You can pre-configure devices and presets using a `Lifx.toml` file. Below is an 
 of the format. You can run `cargo run --example find_and_save devices.txt` from the root of the
 project to find and save a list of devices in the required format.
 
-```toml
+```
 devices = [
     "<mac-address>#<ip-address:port>",
     ...
