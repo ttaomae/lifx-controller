@@ -1,5 +1,5 @@
 use lifx_client::device::Device;
-use rocket::request::FromForm;
+use rocket::form::FromForm;
 use serde::{Deserialize, Serialize};
 
 #[derive(FromForm)]

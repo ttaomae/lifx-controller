@@ -144,8 +144,8 @@ duration = <duration>
 ```
 
 ## Build and Run
-This application is built with [Rocket](https://rocket.rs/) 0.4.x and requires a nightly version of
-Rust. Run `cargo build --release` from the current directory to build the application or run
+This application is built with [Rocket](https://rocket.rs/) 0.5.x and is tested on Rust 1.54.0
+Run `cargo build --release` from the current directory to build the application or run
 `cargo build --bin lifx-web --release` from the root of the project.
 
 ```

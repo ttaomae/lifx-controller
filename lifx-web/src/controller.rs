@@ -13,10 +13,12 @@ pub(crate) struct Devices {
     devices: HashSet<JsonDevice>,
 }
 
-impl<'r> Responder<'r> for Devices {
-    fn respond_to(self, _request: &rocket::Request) -> rocket::response::Result<'r> {
+impl<'r> Responder<'r, 'static> for Devices {
+    fn respond_to(self, _request: &'r rocket::Request) -> rocket::response::Result<'static> {
         if let Ok(body) = serde_json::to_string(&self) {
-            Response::build().sized_body(Cursor::new(body)).ok()
+            Response::build()
+                .sized_body(body.len(), Cursor::new(body))
+                .ok()
         } else {
             std::result::Result::Err(Status::InternalServerError)
         }
@@ -45,10 +47,12 @@ pub(crate) struct Presets {
     presets: HashMap<String, Preset>,
 }
 
-impl<'r> Responder<'r> for Presets {
-    fn respond_to(self, _request: &rocket::Request) -> rocket::response::Result<'r> {
+impl<'r> Responder<'r, 'static> for Presets {
+    fn respond_to(self, _request: &'r rocket::Request) -> rocket::response::Result<'static> {
         if let Ok(body) = serde_json::to_string(&self) {
-            Response::build().sized_body(Cursor::new(body)).ok()
+            Response::build()
+                .sized_body(body.len(), Cursor::new(body))
+                .ok()
         } else {
             std::result::Result::Err(Status::InternalServerError)
         }
@@ -291,6 +295,12 @@ impl From<io::Error> for Error {
 impl From<String> for Error {
     fn from(s: String) -> Self {
         Error(s)
+    }
+}
+
+impl From<toml::de::Error> for Error {
+    fn from(e: toml::de::Error) -> Self {
+        Error(e.to_string())
     }
 }
 
